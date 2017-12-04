@@ -31,7 +31,8 @@ from math import sqrt, ceil
 try:
     import bokeh
     import bokeh.plotting as bpl
-    from bokeh.models import CustomJS, ColumnDataSource, Range1d
+    from bokeh.models import CustomJS, ColumnDataSource, Range1d, Spacer
+    from bokeh.layouts import row, widgetbox, column
 except:
     print("Bokeh could not be loaded. Either it is not installed or you are not running within a notebook")
 
@@ -234,6 +235,178 @@ def nb_view_patches(Yr, A, C, b, f, d1, d2, YrA = None, image_neurons=None, thr=
 
     return Y_r
 
+def view_edit_results(Yr, A, C, b, f, d1, d2, YrA = None, image_neurons=None, thr=0.99, denoised_color=None,cmap='jet'):
+    """
+    Interactive plotting utility for ipython notebook
+
+    Parameters:
+    -----------
+    Yr: np.ndarray
+        movie
+
+    A,C,b,f: np.ndarrays
+        outputs of matrix factorization algorithm
+
+    d1,d2: floats
+        dimensions of movie (x and y)
+
+    YrA:   np.ndarray
+        ROI filtered residual as it is given from update_temporal_components
+        If not given, then it is computed (K x T)        
+
+    image_neurons: np.ndarray
+        image to be overlaid to neurons (for instance the average)
+
+    thr: double
+        threshold regulating the extent of the displayed patches
+
+    denoised_color: string or None
+        color name (e.g. 'red') or hex color code (e.g. '#F0027F')
+
+    cmap: string
+        name of colormap (e.g. 'viridis') used to plot image_neurons
+    """
+    colormap = cm.get_cmap(cmap)
+    grayp = [mpl.colors.rgb2hex(m) for m in colormap(np.arange(colormap.N))]
+    nr, T = C.shape
+    nA2 = np.ravel(np.power(A,2).sum(0)) if type(A) == np.ndarray else np.ravel(A.power(2).sum(0))
+    b = np.squeeze(b)
+    f = np.squeeze(f)
+    if YrA is None:
+        Y_r = np.array(spdiags(old_div(1, nA2), 0, nr, nr) *
+                   (A.T * np.matrix(Yr) -
+                    (A.T * np.matrix(b[:, np.newaxis])) * np.matrix(f[np.newaxis]) -
+                    A.T.dot(A) * np.matrix(C)) + C)
+    else:
+        Y_r = C + YrA
+            
+
+    x = np.arange(T)
+    z = old_div(np.squeeze(np.array(Y_r[:, :].T)), 100)
+    if image_neurons is None:
+        image_neurons = A.mean(1).reshape((d1, d2), order='F')
+
+    coors = get_contours(A, (d1, d2), thr)
+    cc1 = [cor['coordinates'][:, 0] for cor in coors]
+    cc2 = [cor['coordinates'][:, 1] for cor in coors]
+    c1 = cc1[0]
+    c2 = cc2[0]
+
+    # split sources up, such that Bokeh does not warn
+    # "ColumnDataSource's columns must be of the same length"
+    source = ColumnDataSource(data=dict(x=x, y=z[:, 0], y2=C[0] / 100))
+    source_ = ColumnDataSource(data=dict(z=z.T, z2=C / 100))
+    source2 = ColumnDataSource(data=dict(c1=c1, c2=c2))
+    source2_ = ColumnDataSource(data=dict(cc1=cc1, cc2=cc2))
+
+    callback = CustomJS(args=dict(source=source, source_=source_, source2=source2, source2_=source2_), code="""
+            var data = source.get('data')
+            var data_ = source_.get('data')
+            var f = cb_obj.get('value')-1
+            x = data['x']
+            y = data['y']
+            y2 = data['y2']
+
+            for (i = 0; i < x.length; i++) {
+                y[i] = data_['z'][i+f*x.length]
+                y2[i] = data_['z2'][i+f*x.length]
+            }
+
+            var data2_ = source2_.get('data');
+            var data2 = source2.get('data');
+            c1 = data2['c1'];
+            c2 = data2['c2'];
+            cc1 = data2_['cc1'];
+            cc2 = data2_['cc2'];
+
+            for (i = 0; i < c1.length; i++) {
+                   c1[i] = cc1[f][i]
+                   c2[i] = cc2[f][i]
+            }
+            source2.trigger('change')
+            source.trigger('change')
+        """)
+
+    plot = bpl.figure(plot_width=600, plot_height=300)
+    plot.line('x', 'y', source=source, line_width=1, line_alpha=0.6)
+    if denoised_color is not None:
+        plot.line('x', 'y2', source=source, line_width=1, line_alpha=0.6, color=denoised_color)
+
+    slider = bokeh.models.Slider(start=1, end=Y_r.shape[0], value=1, step=1,
+                                 title="Neuron Number", callback=callback)
+
+    deleted_rois_text = bokeh.models.TextInput(title="Deleted ROIs")
+
+
+    del_btn_callback = CustomJS(args=dict(roitxtbox=deleted_rois_text, slider=slider), code="""
+            var slider_val = slider.value;
+            var slider_val_str = ' ' + Math.floor(slider_val);
+            roitxtbox.value += slider_val_str;
+        """)
+    del_roi_btn = bokeh.models.Button(label="Delete ROI", callback=del_btn_callback, width=100)
+    #deleted_rois_array = [int(x) for x in deleted_rois_text.value.strip().split(' ')]
+    #del_roi_btn.on_click(remove_roi_event)
+    #var filetext = 'name,income,years_experience\n';
+    #print(C.shape) #219x2000
+    rois_source = ColumnDataSource(data=dict(c=C))
+    dl_code = """
+        var data_ = roi_data.data;
+        var data = data_['c'];
+        var rows = %s;
+        var cols = %s;
+        var remove_rois = deld_rois.value.split(' ').map(Number).map(function(value) { return value -1; });
+        console.log(remove_rois);
+        //console.log(rows);
+        //console.log(cols);
+        var filetext = '';
+        //iterate over each row
+        for (i=0; i < rows; i++) {
+            if (remove_rois.includes(i)) { continue; }
+            var start = (i * cols);
+            var stop = start + cols;
+            var currRow = [i+1,data.slice(start, stop).toString().concat('\\n')];
+            var joined = currRow.join();
+            filetext = filetext.concat(joined);
+        }
+
+        var filename = 'data_result.csv';
+        var blob = new Blob([filetext], { type: 'text/csv;charset=utf-8;' });
+
+        //addresses IE
+        if (navigator.msSaveBlob) {
+            navigator.msSaveBlob(blob, filename);
+        }
+
+        else {
+            var link = document.createElement("a");
+            link = document.createElement('a')
+            link.href = URL.createObjectURL(blob);
+            link.download = filename
+            link.target = "_blank";
+            link.style.visibility = 'hidden';
+            link.dispatchEvent(new MouseEvent('click'))
+        }
+    """ % (C.shape[0], C.shape[1])
+
+
+    dl_data_btn = bokeh.models.Button(label="Download Data", \
+        callback=CustomJS(args=dict(roi_data=rois_source, deld_rois=deleted_rois_text), code=dl_code), width=100)
+
+    xr = Range1d(start=0, end=image_neurons.shape[1])
+    yr = Range1d(start=image_neurons.shape[0], end=0)
+    plot1 = bpl.figure(x_range=xr, y_range=yr, plot_width=300, plot_height=300)
+
+    plot1.image(image=[image_neurons[::-1, :]], x=0,
+                y=image_neurons.shape[0], dw=d2, dh=d1, palette=grayp)
+    plot1.patch('c1', 'c2', alpha=0.6, color='purple', line_width=2, source=source2)
+    #slider_box = row(slider)
+    #rest_box = row(del_roi_btn, deleted_rois_text, dl_data_btn)
+    spac1 = Spacer(width=50, height=100)
+    #spac2 = Spacer(width=100, height=100)
+    t = bpl.show(bokeh.layouts.layout([[row(slider, del_roi_btn, spac1, deleted_rois_text, dl_data_btn)], \
+        [row(plot1, plot)]]), notebook_handle=True)
+
+    return Y_r
 
 def get_contours(A, dims, thr=0.9):
     """Gets contour of spatial components and returns their coordinates

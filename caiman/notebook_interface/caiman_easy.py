@@ -2,6 +2,7 @@ from __future__ import print_function
 import glob
 import os
 import cv2
+import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
@@ -24,25 +25,37 @@ from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 #import select_file as sf_
 from typing import Dict, Tuple, List
-try:
-    import bokeh
-    import bokeh.plotting as bpl
-    from bokeh.models import CustomJS, ColumnDataSource, Range1d, Spacer
-    from bokeh.layouts import row, widgetbox, column
-    bpl.output_notebook()
-except:
-    print("Bokeh could not be loaded. Either it is not installed or you are not running within a notebook")
 
 #from ..summary_images import local_correlations
 
 
+'''
+Interface Code Developed by Brandon Brown in the Khakh Lab at UCLA
+"CaImAn" algorithms developed by Simons Foundation
+Nov 2017
+'''
+
+
 ######
-class Context:
-	def __init__(self, cluster):
+
+def save_obj(path, obj):
+    with open(path + '.pkl', 'wb') as f:
+        pickle.dump(obj, f, pickle.HIGHEST_PROTOCOL)
+
+def load_obj(path):
+    with open(path + '.pkl', 'rb') as f:
+        return pickle.load(f)
+
+class Context: #used to save data related to analysis (not serializable)
+	def __init__(self, cluster=[]):
 		#setup cluster
-		self.c = cluster[0]
-		self.dview = cluster[1]
-		self.n_processes = cluster[2]
+		if cluster != []:
+			self.c = cluster[0]
+			self.dview = cluster[1]
+			self.n_processes = cluster[2]
+		else:
+			self.c, self.dview, self.n_processes = None,None,None
+
 		self.working_dir = ''
 		self.working_mc_files = [] #str path
 		self.working_cnmf_file = None  #str path
@@ -50,12 +63,63 @@ class Context:
 		self.mc_rig = []    #rigid mc results
 		self.mc_nonrig = [] #non-rigid mc results
 
-		self.YrDT = None # tuple (Yr, dims, T) numpy array (memmory mapped file)
+		self.YrDT = None # tuple (Yr, dims, T), Yr: numpy array (memmory mapped file)
 		self.cnmf_results = [] #A, C, b, f, YrA, sn, idx_components
 		self.cnmf_idx_components_keep = []  #result after filter_rois()
 		self.cnmf_idx_components_toss = []
 		#rest of properties
 		self.cnmf_params = None # CNMF Params: Dict
+		self.correlation_img = None #
+
+	def save(self,path):
+		'''tmpd = {
+			'working_dir':self.working_dir,
+			'working_mc_files':self.working_mc_files,
+			'working_cnmf_file':self.working_cnmf_file,
+			'mc_rig':self.mc_rig,
+			'mc_nonrig':self.mc_nonrig,
+			'YrDT':self.YrDT, 
+			'cnmf_results':self.cnmf_results,
+			'cnmf_idx_components_keep':self.cnmf_idx_components_keep,
+			'cnmf_idx_components_toss':self.cnmf_idx_components_toss,
+			'cnmf_params':self.cnmf_params,
+			'correlation_img':self.correlation_img
+		}'''
+		tmp_cnmf_params = {}
+		if self.cnmf_params is not None:
+			tmp_cnmf_params = self.cnmf_params
+			tmp_cnmf_params['dview'] = None  #we cannot pickle socket objects, must set to None
+			tmp_cnmf_params['n_processes'] = None
+
+		tmpd = [
+			self.working_dir,
+			self.working_mc_files,
+			self.working_cnmf_file,
+			self.mc_rig,
+			self.mc_nonrig,
+			self.YrDT, 
+			self.cnmf_results,
+			self.cnmf_idx_components_keep,
+			self.cnmf_idx_components_toss,
+			tmp_cnmf_params,
+			self.correlation_img
+		]
+		save_obj(path, tmpd)
+		print("Context saved to: %s" % (path,))
+
+	def load(self,path,cluster=[]): #cluster is list of: c, dview, n_processes  (from ipyparallel)
+		if cluster != []:
+			self.c = cluster[0]
+			self.dview = cluster[1]
+			self.n_processes = cluster[2]
+
+		tmpd = load_obj(path)
+
+		self.working_dir, self.working_mc_files, self.working_cnmf_file, self.mc_rig, \
+		self.mc_nonrig, self.YrDT, self.cnmf_results, self.cnmf_idx_components_keep, \
+		self.cnmf_idx_components_toss, self.cnmf_params, self.correlation_img = tmpd
+		print("Context loaded from: %s" % (path,))
+
 
 
 #setup cluster
@@ -177,13 +241,6 @@ def combine_mc_mmaps(mc_list, dview):
 	print(mc_mov_name)
 	return mc_mov_name
 
-def tiff2mmap():
-	fldr = '/Users/brandonbrown/Desktop/KhakhLab/MiniscopeProject/ForLabMtng/'
-	files_tif = glob.glob(fldr + '*.tif')
-	for f in files_tif:
-		cm.load(f).resize(0.8,0.799,1).save(os.path.splitext(f)[0] + '.mmap') #should produce 192x300xFrames
-
-
 def resize_mov(Yr, fx=0.521, fy=0.3325):
 	t,h,w = Yr.shape
 	newshape=(int(w*fy),int(h*fx))
@@ -211,12 +268,6 @@ def cnmf_run(fname: str, cnmf_params: Dict): #fname is a full path, mmap file
 	#configs
 	cnm = cnmf.CNMF(**cnmf_params)
 	cnm.fit(Yr)
-	'''	cnm = cnmf.CNMF(n_processes=n_processes, method_init='corr_pnr', k=20, gSig=(5, 5), gSiz=(5, 5), merge_thresh=.8,
-				p=1, dview=dview, tsub=1, ssub=1,p_ssub=2, Ain=None, rf=(25, 25), stride=(15, 15),
-				only_init_patch=True, gnb=5, nb_patch=3, method_deconvolution='oasis',
-				low_rank_background=False, update_background_components=False, min_corr=min_corr,
-				min_pnr=min_pnr, normalize_init=False, deconvolve_options_init=None,
-				ring_size_factor=1.5, center_psf=True)'''
 	#get results
 	A, C, b, f, YrA, sn = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn
 	idx_components = np.arange(A.shape[-1])
@@ -268,25 +319,27 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 	return idx_components, idx_components_bad
 
 
-def corr_img(Yr: np.ndarray, gSig: int, center_psf :bool):
+def corr_img(Yr: np.ndarray, gSig: int, center_psf :bool, plot=True):
 	# show correlation image of the raw data; show correlation image and PNR image of the filtered data
 	cn_raw = cm.summary_images.max_correlation_image(Yr, swap_dim=False, bin_size=3000) #default 3000
 	#%% TAKES MEMORY!!!
 	cn_filter, pnr = cm.summary_images.correlation_pnr(
 		Yr, gSig=gSig, center_psf=center_psf, swap_dim=False)
-	plot_ = plt.figure(figsize=(10, 5))
-	#%%
-	for i, (data, title) in enumerate(((Yr.mean(0), 'Mean image (raw)'),
-									   (Yr.max(0), 'Max projection (raw)'),
-									   (cn_raw[1:-1, 1:-1], 'Correlation (raw)'),
-									   (cn_filter, 'Correlation (filtered)'),
-									   (pnr, 'PNR (filtered)'),
-									   (cn_filter * pnr, 'Correlation*PNR (filtered)'))):
-		plt.subplot(2, 3, 1 + i)
-		plt.imshow(data, cmap='jet', aspect='equal')
-		plt.axis('off')
-		plt.colorbar()
-		plt.title(title)
+	plot_ = None
+	if plot:
+		plot_ = plt.figure(figsize=(10, 5))
+		#%%
+		for i, (data, title) in enumerate(((Yr.mean(0), 'Mean image (raw)'),
+										   (Yr.max(0), 'Max projection (raw)'),
+										   (cn_raw[1:-1, 1:-1], 'Correlation (raw)'),
+										   (cn_filter, 'Correlation (filtered)'),
+										   (pnr, 'PNR (filtered)'),
+										   (cn_filter * pnr, 'Correlation*PNR (filtered)'))):
+			plt.subplot(2, 3, 1 + i)
+			plt.imshow(data, cmap='jet', aspect='equal')
+			plt.axis('off')
+			plt.colorbar()
+			plt.title(title)
 	return cn_raw, cn_filter, pnr, plot_
 '''
 def pick_thresholds():
@@ -514,12 +567,6 @@ def play_movie(movie, interval=50, blit=True, cmap='gist_gray', vmin=None, vmax=
 		return im,
 	anim = animation.FuncAnimation(fig, updatefig, frames=frames, interval=50, blit=blit)
 	return HTML(anim.to_html5_video())
-
-def remove_roi():
-	pass
-
-def download_data():
-	pass
 
 def clean_up(stop_server=False):
 	if stop_server: cm.stop_server()
