@@ -12,11 +12,17 @@ from matplotlib import animation, rc
 from scipy.sparse import coo_matrix
 from past.utils import old_div
 import caiman as cm
+
 from caiman.source_extraction import cnmf
 from caiman.motion_correction import MotionCorrect
 from caiman.motion_correction import tile_and_correct, motion_correction_piecewise
 from caiman import save_memmap_join
 from caiman.mmapping import load_memmap
+
+from caiman.utils.visualization import inspect_correlation_pnr
+from caiman.components_evaluation import estimate_components_quality_auto
+from caiman.motion_correction import motion_correct_oneP_rigid,motion_correct_oneP_nonrigid
+
 import scipy
 import pylab as pl
 import matplotlib as mpl
@@ -302,6 +308,9 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 	final_frate = 20# approx final rate  (after eventual downsampling )
 	Npeaks = 10
 	traces = None
+	min_SNR = 3 # adaptive way to set threshold on the transient size
+	r_values_min = 0.85  # threshold on space consistency (if you lower more components will be accepted, potentially with worst quality)
+	decay_time = 0.4  #decay time of transients/indocator
 	try:
 		traces = C + YrA
 	except ValueError:
@@ -309,18 +318,21 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 	#        traces_a=traces-scipy.ndimage.percentile_filter(traces,8,size=[1,np.shape(traces)[-1]/5])
 	#        traces_b=np.diff(traces,axis=1)
 	Y = np.reshape(Yr, dims + (T,), order='F')
-	fitness_raw, fitness_delta, erfc_raw, erfc_delta, r_values, significant_samples = cm.components_evaluation.evaluate_components(
-		Y, traces, A, C, b, f, final_frate, remove_baseline=True, N=5, robust_std=False, Athresh=0.1, Npeaks=Npeaks,  thresh_C=0.3)
-
-	idx_components_r = np.where(r_values >= .5)[0]
+	'''fitness_raw, fitness_delta, erfc_raw, erfc_delta, r_values, significant_samples = cm.components_evaluation.evaluate_components(
+						Y, traces, A, C, b, f, final_frate, remove_baseline=True, N=5, robust_std=False, Athresh=0.1, Npeaks=Npeaks,  thresh_C=0.3)
+				'''	# %% DISCARD LOW QUALITY COMPONENTS
+	idx_components, idx_components_bad, comp_SNR, r_values, pred_CNN = estimate_components_quality_auto( \
+                            Yr, A, C, b, f, YrA, final_frate, \
+                            decay_time, gSig, dims, dview = dview, \
+                            min_SNR=min_SNR, r_values_min = r_values_min, use_cnn = False)
+	'''	idx_components_r = np.where(r_values >= .5)[0]
 	idx_components_raw = np.where(fitness_raw < -40)[0]
 	idx_components_delta = np.where(fitness_delta < -20)[0]
 
 	idx_components = np.union1d(idx_components_r, idx_components_raw)
 	idx_components = np.union1d(idx_components, idx_components_delta)
-	idx_components_bad = np.setdiff1d(list(range(len(traces))), idx_components)
-
-	print(('Keeping ' + str(len(idx_components)) +
+	idx_components_bad = np.setdiff1d(list(range(len(traces))), idx_components)'''
+	print(('Keeping ' + str(len(idx_components)) + \
 		   ' and discarding  ' + str(len(idx_components_bad))))
 	return idx_components, idx_components_bad
 
