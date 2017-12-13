@@ -284,7 +284,7 @@ def cnmf_run(fname: str, cnmf_params: Dict): #fname is a full path, mmap file
 	A, C, b, f, YrA, sn = cnm.A, cnm.C, cnm.b, cnm.f, cnm.YrA, cnm.sn
 	idx_components = np.arange(A.shape[-1])
 	clean_up() #remove log files
-	return A,C, b, f, YrA, sn, idx_components
+	return A, C, b, f, YrA, sn, idx_components
 
 
 def plot_contours(YrDT: Tuple, cnmf_results: Tuple, cn_filter):
@@ -302,7 +302,7 @@ def plot_contours(YrDT: Tuple, cnmf_results: Tuple, cn_filter):
 		YrA, coo_matrix(A.tocsc()[:, idx_components]), C[idx_components],
 		b, f, dims[0], dims[1], YrA=YrA[idx_components], img=cn_filter)
 
-def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
+def filter_rois(YrDT: Tuple, cnmf_results: Tuple, dview):
 	Yr, dims, T = YrDT
 	A, C, b, f, YrA, sn, idx_components_orig = cnmf_results
 	final_frate = 20# approx final rate  (after eventual downsampling )
@@ -325,7 +325,7 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 				'''	# %% DISCARD LOW QUALITY COMPONENTS
 	idx_components, idx_components_bad, comp_SNR, r_values, pred_CNN = estimate_components_quality_auto( \
                             Y, A, C, b, f, YrA, final_frate, \
-                            decay_time, gSig, dims, dview = None, \
+                            decay_time, gSig, dims, dview = dview, \
                             min_SNR=min_SNR, r_values_min = r_values_min, use_cnn = False)
 	'''	idx_components_r = np.where(r_values >= .5)[0]
 	idx_components_raw = np.where(fitness_raw < -40)[0]

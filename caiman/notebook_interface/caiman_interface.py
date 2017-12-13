@@ -403,7 +403,7 @@ def run_cnmf_ui(_):
     if refine_results:
         print("Automatically refining results...")
         context.idx_components_keep, context.idx_components_toss = \
-            filter_rois(context.YrDT, context.cnmf_results)
+            filter_rois(context.YrDT, context.cnmf_results, context.dview)
     #def corr_img(Yr, gSig, center_psr :bool):
     #save denoised movie:
     save_denoised_avi(context.cnmf_results, dims, context.idx_components_keep)
