@@ -227,9 +227,15 @@ def run_mc(fnames, mc_params, dsfactors, rigid=True, batch=True):
 		#delete individual files
 		for old_f in mc_list:
 			if rigid:
-				os.remove(old_f.fname_tot_rig)
+				try:
+					os.remove(old_f.fname_tot_rig)
+				except PermissionError:
+					print("PermissionError: Cannot delete temporary file. (Non-Fatal)")
 			else:
-				os.remove(old_f.fname_tot_els)
+				try:
+					os.remove(old_f.fname_tot_els)
+				except PermissionError:
+					print("PermissionError: Cannot delete temporary file. (Non-Fatal)")
 		return [combined_file]
 	else:
 		return mc_list

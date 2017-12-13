@@ -1003,7 +1003,7 @@ def greedyROI_corr(Y, Y_ds, max_number=None, gSiz=None, gSig=None, center_psf=Tr
         # background according to ringmodel
         W, b0 = compute_W(Y_ds.reshape((-1, total_frames), order='F'),
                           A.toarray(), C, (d1, d2), int(np.round(ring_size_factor * gSiz)))
-
+        print("Debugging (line 1006, initialization.py): A.shape ({0}) C.shape ({1})".format(A.shape, C.shape))
         # 2nd iteration on non-decimated data
         K = C.shape[0]
         if T > total_frames:
@@ -1041,9 +1041,13 @@ def greedyROI_corr(Y, Y_ds, max_number=None, gSiz=None, gSig=None, center_psf=Tr
         nA = np.ravel(np.sqrt(A.power(2).sum(0)))
         A = np.array(A / nA)
         C *= nA[:, None]
-
+        #update K
+        K = C.shape[0] 
         print('Compute Background Again')  # on decimated data
+        print("Debugging: dims (%s) ssub (%s) d1 (%s) d2 (%s) K (%s) tsub (%s) total_frames (%s)" \
+            % (dims, ssub, d1, d2, K, tsub, total_frames))
         A_ds = downscale(np.reshape(A, dims + (-1,), order='F'), (ssub, ssub, 1))
+        print("Debugging: A_ds.shape ({})".format(A_ds.shape))
         A_ds = np.reshape(A_ds, (d1 * d2, K), order='F')
         # background according to ringmodel
         W, b0 = compute_W(Y_ds.reshape((-1, total_frames), order='F'),
