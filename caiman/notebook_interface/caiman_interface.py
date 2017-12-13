@@ -365,7 +365,7 @@ def run_cnmf_ui(_):
         'gnb':5, 
         'nb_patch':3, 
         'method_deconvolution':'oasis',
-        'low_rank_background': False, 
+        'low_rank_background': True, 
         'update_background_components': False, 
         'min_corr':min_corr,
         'min_pnr':min_pnr, 
@@ -374,7 +374,8 @@ def run_cnmf_ui(_):
         'ring_size_factor':1.5, 
         'center_psf': True,
         'deconv_flag': False,
-        'simultaneously': False
+        'simultaneously': False,
+        'del_duplicates':True
     }
     #save params to context
     context.cnmf_params = cnmf_params
@@ -398,8 +399,11 @@ def run_cnmf_ui(_):
         C = np.asarray(C) #make sure C is ndarray not matrix
     context.cnmf_results = A, C, b, f, YrA, sn, idx_components
     print("CNMF-E FINISHED!")
+    print("Debugging (caiman_easy.py line 323 filter_rois): A.shape {0}, C.shape {1}, Yr.shape {3}, idx_components_orig {4}".format(
+    A.shape,C.shape,Yr.shape,idx_components
+    ))
     #results: A, C, b, f, YrA, sn, idx_components
-    refine_results=True
+    refine_results = True
     if refine_results:
         print("Automatically refining results...")
         context.idx_components_keep, context.idx_components_toss = \

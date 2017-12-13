@@ -71,8 +71,8 @@ class Context: #used to save data related to analysis (not serializable)
 
 		self.YrDT = None # tuple (Yr, dims, T), Yr: numpy array (memmory mapped file)
 		self.cnmf_results = [] #A, C, b, f, YrA, sn, idx_components
-		self.cnmf_idx_components_keep = []  #result after filter_rois()
-		self.cnmf_idx_components_toss = []
+		self.idx_components_keep = []  #result after filter_rois()
+		self.idx_components_toss = []
 		#rest of properties
 		self.cnmf_params = None # CNMF Params: Dict
 		self.correlation_img = None #
@@ -320,13 +320,16 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple, dview):
 	#        traces_a=traces-scipy.ndimage.percentile_filter(traces,8,size=[1,np.shape(traces)[-1]/5])
 	#        traces_b=np.diff(traces,axis=1)
 	Y = np.reshape(Yr, dims + (T,), order='F')
+	print("Debugging (caiman_easy.py line 323 filter_rois): A.shape {0}, C.shape {1}, Y.shape {2}, Yr.shape {3}, idx_components_orig {4}".format(
+		A.shape,C.shape,Y.shape,Yr.shape,idx_components_orig
+		))
 	'''fitness_raw, fitness_delta, erfc_raw, erfc_delta, r_values, significant_samples = cm.components_evaluation.evaluate_components(
 						Y, traces, A, C, b, f, final_frate, remove_baseline=True, N=5, robust_std=False, Athresh=0.1, Npeaks=Npeaks,  thresh_C=0.3)
 				'''	# %% DISCARD LOW QUALITY COMPONENTS
-	idx_components, idx_components_bad, comp_SNR, r_values, pred_CNN = estimate_components_quality_auto( \
-                            Y, A, C, b, f, YrA, final_frate, \
-                            decay_time, gSig, dims, dview = dview, \
-                            min_SNR=min_SNR, r_values_min = r_values_min, use_cnn = False)
+	idx_components, idx_components_bad, comp_SNR, r_values, pred_CNN = estimate_components_quality_auto(
+                            Y, A, C, b, f, YrA, final_frate, 
+                            decay_time, gSig, dims, dview = dview, 
+                            min_SNR=min_SNR, r_values_min = r_values_min, min_std_reject = 0.5, use_cnn = False)
 	'''	idx_components_r = np.where(r_values >= .5)[0]
 	idx_components_raw = np.where(fitness_raw < -40)[0]
 	idx_components_delta = np.where(fitness_delta < -20)[0]

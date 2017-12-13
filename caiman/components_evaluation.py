@@ -477,7 +477,7 @@ def estimate_components_quality_auto(Y, A, C, b, f, YrA, frate, decay_time, gSig
         fitness_min = scipy.special.log_ndtr(-min_SNR)*N_samples                # threshold on time variability        
         thresh_fitness_raw_reject = scipy.special.log_ndtr(-min_std_reject)*N_samples      # components with SNR lower than 0.5 will be rejected
         traces = C + YrA
-
+        print("Debugging (components_evaluation.py line 480): Y.shape {0}, A.shape {1}, C.shape {2}".format(Y.shape,A.shape,C.shape))
         _, _ , fitness_raw, fitness_delta, r_values = estimate_components_quality(
             traces, Y, A, C, b, f, final_frate=frate, Npeaks=Npeaks, r_values_min=r_values_min, fitness_min=fitness_min,
             fitness_delta_min=thresh_fitness_delta, return_all=True, dview = dview, num_traces_per_group = 50, N = N_samples)
@@ -580,7 +580,7 @@ def estimate_components_quality(traces, Y, A, C, b, f, final_frate = 30, Npeaks=
                                               N=N, robust_std=False, Athresh=0.1, Npeaks=Npeaks,  thresh_C=0.3 )
         
     else: # memory mapped case    
-        
+        print("Debugging (in components_evaluation.py in 583): A.shape ({})".format(A.shape))
         Ncomp = A.shape[-1]   
         groups = grouper(num_traces_per_group, range(Ncomp))
         params = []
