@@ -311,6 +311,8 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 	min_SNR = 3 # adaptive way to set threshold on the transient size
 	r_values_min = 0.85  # threshold on space consistency (if you lower more components will be accepted, potentially with worst quality)
 	decay_time = 0.4  #decay time of transients/indocator
+	gSig = 4   # gaussian width of a 2D gaussian kernel, which approximates a neuron
+	gSiz = 12  # average diameter of a neuron
 	try:
 		traces = C + YrA
 	except ValueError:
@@ -322,8 +324,8 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple):
 						Y, traces, A, C, b, f, final_frate, remove_baseline=True, N=5, robust_std=False, Athresh=0.1, Npeaks=Npeaks,  thresh_C=0.3)
 				'''	# %% DISCARD LOW QUALITY COMPONENTS
 	idx_components, idx_components_bad, comp_SNR, r_values, pred_CNN = estimate_components_quality_auto( \
-                            Yr, A, C, b, f, YrA, final_frate, \
-                            decay_time, gSig, dims, dview = dview, \
+                            Y, A, C, b, f, YrA, final_frate, \
+                            decay_time, gSig, dims, dview = None, \
                             min_SNR=min_SNR, r_values_min = r_values_min, use_cnn = False)
 	'''	idx_components_r = np.where(r_values >= .5)[0]
 	idx_components_raw = np.where(fitness_raw < -40)[0]
