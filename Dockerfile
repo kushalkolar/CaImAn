@@ -1,5 +1,40 @@
 FROM ubuntu
 
+USER root
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+RUN apt-get update --fix-missing && apt-get install -y wget bzip2 ca-certificates \
+    libglib2.0-0 libxext6 libsm6 libxrender1 \
+    git mercurial subversion
+
+RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
+    wget --quiet https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh
+
+#https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
+#wget --quiet https://repo.continuum.io/miniconda/Miniconda3-4.1.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+
+RUN apt-get install -y curl grep sed dpkg && \
+    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+    dpkg -i tini.deb && \
+    rm tini.deb && \
+    apt-get clean
+
+ENV PATH /opt/conda/bin:$PATH
+# Configure environment
+# ENV CONDA_DIR=/opt/conda \
+#     SHELL=/bin/bash \
+#     NB_USER=jovyan \
+#     NB_UID=1000 \
+#     NB_GID=100
+
+# RUN useradd -m -s /bin/bash -N -u $NB_UID $NB_USER && \
+#     mkdir -p $CONDA_DIR && \
+#     chown $NB_USER:$NB_GID $CONDA_DIR
+
 RUN apt-get update
 RUN apt-get install -y libglib2.0-0
 RUN apt-get install -y git wget
@@ -7,34 +42,34 @@ RUN apt-get install bzip2
 RUN apt-get install -y gcc
 RUN apt-get install -y g++
 RUN apt-get install -y libgtk2.0-0
-RUN export MINICONDA=$HOME/miniconda
-RUN export PATH="$MINICONDA/bin:$PATH"
-RUN hash -r
-RUN wget -q https://3230d63b5fc54e62148e-c95ac804525aac4b6dba79b00b39d1d3.ssl.cf1.rackcdn.com/Anaconda2-2.5.0-Linux-x86_64.sh -O anaconda.sh
-# RUN bash anaconda.sh -b -p $ANACONDA
-RUN bash anaconda.sh -p /anaconda -b
-ENV PATH=/anaconda/bin:${PATH}
+RUN apt-get -y install libgl1-mesa-glx
+RUN apt-get install libglib2.0-0
+
+RUN apt-get install libc6-i386
+RUN apt-get install -y libsm6 libxrender1
+
 RUN conda config --set always_yes yes
 RUN conda update --yes conda
 RUN conda info -a
 RUN CONDA_SSL_VERIFY=false conda update pyopenssl
-# RUN conda install -c menpo opencv3=3.1.0
-# RUN conda install -c cvxgrp cvxpy
-# RUN conda install -c https://conda.anaconda.org/conda-forge tifffile
-# RUN git clone --recursive -b agiovann-master https://github.com/valentina-s/Constrained_NMF.git
-# RUN git clone --recursive https://github.com/agiovann/Constrained_NMF.git
-# RUN git clone --recursive -b dev https://github.com/agiovann/Constrained_NMF.git
-ADD . /CaImAn
+
+ADD . /CaImAn/
 WORKDIR /CaImAn/
-RUN conda env update -f environment.yml -n root
-#RUN conda install --file requirements_conda.txt
-#RUN pip install -r requirements_pip.txt
-RUN apt-get install libc6-i386
-RUN apt-get install -y libsm6 libxrender1
-RUN conda install pyqt=4.11.4
-RUN python setup.py install
-RUN python setup.py build_ext -i
 
-# RUN nosetests
+RUN rm /bin/sh && ln -s /bin/bash /bin/sh
 
-EXPOSE 8080
+# RUN conda install python=3.6
+# RUN conda create -n root python=3.6
+RUN conda env update python=3.6 -f environment.yml -n caiman 
+RUN source activate caiman && \
+    conda install -c anaconda pyqt && \
+    #conda install anaconda-nb-extensions -c anaconda-nb-extensions && \
+    jupyter nbextension enable --py --sys-prefix widgetsnbextension && \
+    python setup.py install && python setup.py build_ext -i
+
+RUN chmod +x /usr/bin/tini
+ENTRYPOINT ["/usr/bin/tini", "--"]
+
+EXPOSE 8888
+# CMD "source activate caiman && jupyter notebook --port=8888 --no-browser --ip=0.0.0.0 --allow-root"
+# CMD ["jupyter", "notebook", "--port=8888", "--no-browser", "--ip=0.0.0.0", "--allow-root"]

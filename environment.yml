@@ -1,17 +1,24 @@
 channels:
 - defaults
 - menpo
+- conda-forge
+- soft-matter
 dependencies:
+- ffmpeg
+- av
 - future
 - numpy
 - scipy
 - ipython
 - ipyparallel
 - jupyter
+- ipywidgets
+- bqplot
 - matplotlib
 - scikit-image
 - scikit-learn
 - h5py
+- nb_conda
 - cython
 - spyder
 - nose
@@ -19,7 +26,11 @@ dependencies:
 - tensorflow
 - keras
 - tqdm
+- tifffile
+- peakutils
+- slicerator
+- pims
 - opencv3
-- pip:
-  - tifffile
-  - peakutils
+#- pip:
+#	- tifffile
+# 	- peakutils

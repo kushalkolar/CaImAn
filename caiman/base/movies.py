@@ -47,6 +47,10 @@ from skimage.external.tifffile import imread
 from tqdm import tqdm
 from . import timeseries
 try:
+    import pims
+except ImportError:
+    pass
+try:
     import sima
     HAS_SIMA = True
 except ImportError:
@@ -1177,7 +1181,24 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
 
             # When everything done, release the capture
             cap.release()
-            cv2.destroyAllWindows()  
+            cv2.destroyAllWindows()
+            @pims.pipeline
+            def as_grey(frame):
+                red = frame[:, :, 0]
+                green = frame[:, :, 1]
+                blue = frame[:, :, 2]
+                return 0.2125 * red + 0.7154 * green + 0.0721 * blue
+            if len(input_arr) == 0:
+                print("OpenCV not configured to read AVI, resorting to PIMS")
+                #something wrong with opencv; known issues w/ ffmpeg on some operating systems
+                #use PIMS instead
+                f_ = pims.open(file_name)
+                f = as_grey(f_)
+                length = len(f)
+                height, width, _ = f.frame_shape
+                input_arr = np.zeros((length, height, width), dtype=np.uint8)
+                for fr in range(length):
+                    input_arr[fr,:,:] = f[fr]  
 
         elif extension == '.npy': # load npy file
             if fr is None:
