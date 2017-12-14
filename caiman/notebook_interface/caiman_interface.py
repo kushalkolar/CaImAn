@@ -412,11 +412,11 @@ def run_cnmf_ui(_):
         'p_ssub': ds_spatial if is_patches else None,  #THIS IS INTEGER NOT FLOAT
         'p_tsub': ds_temporal if is_patches else None,
         'Ain':None, 
-        'rf':(25, 25) if is_patches else None, #enables patches
-        'stride':(15, 15),
+        'rf':(40, 40) if is_patches else None, #enables patches; was 25x25
+        'stride':(20, 20), #was 15,15
         'only_init_patch': True, 
-        'gnb':5, 
-        'nb_patch':3, 
+        'gnb':16, 
+        'nb_patch':16, 
         'method_deconvolution':'oasis',
         'low_rank_background': True, 
         'update_background_components': False, 
