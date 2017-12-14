@@ -31,6 +31,7 @@ from ipywidgets import interact, interactive, fixed, interact_manual
 import ipywidgets as widgets
 #import select_file as sf_
 from typing import Dict, Tuple, List
+import datetime
 
 #from ..summary_images import local_correlations
 
@@ -105,8 +106,8 @@ class Context: #used to save data related to analysis (not serializable)
 			self.mc_nonrig,
 			self.YrDT, 
 			self.cnmf_results,
-			self.cnmf_idx_components_keep,
-			self.cnmf_idx_components_toss,
+			self.idx_components_keep,
+			self.idx_components_toss,
 			tmp_cnmf_params,
 			self.correlation_img
 		]
@@ -122,8 +123,8 @@ class Context: #used to save data related to analysis (not serializable)
 		tmpd = load_obj(path)
 
 		self.working_dir, self.working_mc_files, self.working_cnmf_file, self.mc_rig, \
-		self.mc_nonrig, self.YrDT, self.cnmf_results, self.cnmf_idx_components_keep, \
-		self.cnmf_idx_components_toss, self.cnmf_params, self.correlation_img = tmpd
+		self.mc_nonrig, self.YrDT, self.cnmf_results, self.idx_components_keep, \
+		self.idx_components_toss, self.cnmf_params, self.correlation_img = tmpd
 		print("Context loaded from: %s" % (path,))
 
 
@@ -302,7 +303,7 @@ def plot_contours(YrDT: Tuple, cnmf_results: Tuple, cn_filter):
 		YrA, coo_matrix(A.tocsc()[:, idx_components]), C[idx_components],
 		b, f, dims[0], dims[1], YrA=YrA[idx_components], img=cn_filter)
 
-def filter_rois(YrDT: Tuple, cnmf_results: Tuple, dview):
+def filter_rois(YrDT: Tuple, cnmf_results: Tuple, dview, gSig, gSiz):
 	Yr, dims, T = YrDT
 	A, C, b, f, YrA, sn, idx_components_orig = cnmf_results
 	final_frate = 20# approx final rate  (after eventual downsampling )
@@ -311,8 +312,8 @@ def filter_rois(YrDT: Tuple, cnmf_results: Tuple, dview):
 	min_SNR = 3 # adaptive way to set threshold on the transient size
 	r_values_min = 0.85  # threshold on space consistency (if you lower more components will be accepted, potentially with worst quality)
 	decay_time = 0.4  #decay time of transients/indocator
-	gSig = 4   # gaussian width of a 2D gaussian kernel, which approximates a neuron
-	gSiz = 12  # average diameter of a neuron
+	#gSig = 4   # gaussian width of a 2D gaussian kernel, which approximates a neuron
+	#gSiz = 12  # average diameter of a neuron
 	try:
 		traces = C + YrA
 	except ValueError:
@@ -390,7 +391,7 @@ def save_data():
 	#TODO: should include contour plot somehow
 	np.savez(folder2 + 'analysisResults2.npz', A=A, C=C)
 
-def save_denoised_avi(data, dims, idx_components_keep):
+def save_denoised_avi(data, dims, idx_components_keep, working_dir=""):
 	A, C, b, f, YrA, sn, idx_components = data
 	idx_components = idx_components_keep
 	x = None
@@ -398,8 +399,11 @@ def save_denoised_avi(data, dims, idx_components_keep):
 		x = cm.movie(A.tocsc()[:, idx_components].dot(C[idx_components, :])).reshape(dims + (-1,), order='F').transpose([2, 0, 1])
 	else:
 		x = cm.movie(A[:, idx_components].dot(C[idx_components, :])).reshape(dims + (-1,), order='F').transpose([2, 0, 1])
-	x.save("denoised.avi")
-	print("Saved denoised.avi")
+	currentDT = datetime.datetime.now()
+	ts_ = currentDT.strftime("%Y%m%d_%H_%M_%S")
+	avi_save_path = working_dir + "denoised_" + ts_ + ".avi"
+	x.save(avi_save_path)
+	print("Saved denoised AVI movie to: {}".format(avi_save_path))
 
 def load_data():
 	#Need to import contour plot somehow

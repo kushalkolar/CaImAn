@@ -27,6 +27,59 @@ context = Context(start_procs())
 #motion correction interface
 
 # UX
+workingdir_selector = widgets.Text(
+    value=os.getcwd(),
+    placeholder=os.getcwd(),
+    #description='Working Directory:',
+    layout=widgets.Layout(width='35%'),
+    disabled=False
+)
+workingdir_btn = widgets.Button(
+    description='Set WkDir',
+    disabled=False,
+    button_style='success', # 'success', 'info', 'warning', 'danger' or ''
+    tooltip='Set working directory'
+)
+context_path_txt = widgets.Text(
+    value=os.getcwd(),
+    placeholder=os.getcwd(),
+    #description='Load Context from:',
+    layout=widgets.Layout(width='35%'),
+    disabled=False
+)
+context_load_btn = widgets.Button(
+    description='Load Context',
+    disabled=False,
+    button_style='success', # 'success', 'info', 'warning', 'danger' or ''
+    tooltip='Load Context'
+)
+context_save_btn = widgets.Button(
+    description='Save Context',
+    disabled=False,
+    button_style='success', # 'success', 'info', 'warning', 'danger' or ''
+    tooltip='Save Context'
+)
+def load_context_event(_):
+    context.load(context_path_txt.value)
+
+def save_context_event(_):
+    currentDT = datetime.datetime.now()
+    ts_ = currentDT.strftime("%Y%m%d_%H_%M_%S")
+    c_loc = workingdir_selector.value + "context_" + ts_
+    context.save(c_loc)
+
+context_load_btn.on_click(load_context_event)
+context_save_btn.on_click(save_context_event)
+
+
+
+wkdir_box = widgets.HBox()
+wkdir_box.children = [widgets.Label("Set Working Directory:"), workingdir_selector, workingdir_btn]
+context_box = widgets.HBox()
+context_box.children = [widgets.Label("Load context from:"),context_path_txt, context_load_btn, context_save_btn]
+wkdir_context_box = widgets.VBox()
+wkdir_context_box.children = [wkdir_box,context_box]
+
 file_selector = widgets.Text(
     value=os.getcwd(),
     placeholder=os.getcwd(),
@@ -59,14 +112,14 @@ is_batch_widget = widgets.ToggleButtons(
     tooltips=['Run all movies together as if one movie', 'Run each movie independently'],
 #     icons=['check'] * 3
 )
-dslabel = widgets.Label(value="Downsample Percentage (x, y, frames)")
+dslabel = widgets.Label(value="Downsample Percentage (height, width, frames/time)")
 ds_layout = widgets.Layout(width="20%")
 dsx_widget = widgets.BoundedFloatText(
     value=1,
     min=0.1,
     max=1.0,
     step=0.1,
-    description='x:',
+    description='height:',
     disabled=False,
     layout=ds_layout
 )
@@ -75,7 +128,7 @@ dsy_widget = widgets.BoundedFloatText(
     min=0.1,
     max=1.0,
     step=0.1,
-    description='y:',
+    description='width:',
     disabled=False,
     layout=ds_layout
 )
@@ -283,7 +336,7 @@ basic_row2 = widgets.HBox()
 basic_row2.children = [k_widget, gSig_widget, gSiz_widget]
 
 min_corr_widget = widgets.FloatSlider(
-    value=0.8,
+    value=0.85,
     min=0.0,
     max=1.0,
     step=0.05,
@@ -296,7 +349,7 @@ min_corr_widget = widgets.FloatSlider(
     tooltip='Minimum Correlation'
 )
 min_pnr_widget = widgets.IntSlider(
-    value=8,
+    value=15,
     min=1,
     max=50,
     step=1,
@@ -394,23 +447,23 @@ def run_cnmf_ui(_):
     print("Starting CNMF-E...")
     print("Using patches") if is_patches else print("Single FOV")
     A, C, b, f, YrA, sn, idx_components = cnmf_run(context.working_cnmf_file, cnmf_params)
-    if not is_patches: #for some reason, need to convert to ndarray if doing Single FOV
-        A = np.asarray(A) #make sure A is ndarray not matrix
-        C = np.asarray(C) #make sure C is ndarray not matrix
+    print("Debugging (caiman_interface.py line 397 filter_rois): A.shape {0}, C.shape {1}, Yr.shape {2}, idx_components_orig {3}".format(A.shape,C.shape,Yr.shape,idx_components))
+    print("{}".format(type(A)))
+    '''    if not is_patches: #for some reason, need to convert to ndarray if doing Single FOV;
+    A = np.asarray(A) #make sure A is ndarray not matrix
+    C = np.asarray(C) #make sure C is ndarray not matrix'''
+    print("{}".format(type(A)))
     context.cnmf_results = A, C, b, f, YrA, sn, idx_components
     print("CNMF-E FINISHED!")
-    print("Debugging (caiman_easy.py line 323 filter_rois): A.shape {0}, C.shape {1}, Yr.shape {3}, idx_components_orig {4}".format(
-    A.shape,C.shape,Yr.shape,idx_components
-    ))
     #results: A, C, b, f, YrA, sn, idx_components
     refine_results = True
     if refine_results:
         print("Automatically refining results...")
         context.idx_components_keep, context.idx_components_toss = \
-            filter_rois(context.YrDT, context.cnmf_results, context.dview)
+            filter_rois(context.YrDT, context.cnmf_results, context.dview, gSig, gSiz)
     #def corr_img(Yr, gSig, center_psr :bool):
     #save denoised movie:
-    save_denoised_avi(context.cnmf_results, dims, context.idx_components_keep)
+    save_denoised_avi(context.cnmf_results, dims, context.idx_components_keep, context.working_dir)
 run_cnmf_btn.on_click(run_cnmf_ui)
 major_cnmf_col = widgets.VBox()
 major_cnmf_col.children = [cnmf_file_box, cnmf_settings, run_cnmf_btn]
@@ -606,6 +659,17 @@ view_cnmf_results_widget = widgets.Button(
     tooltip='View CNMF Results',
     layout=widgets.Layout(width="30%")
 )
+
+
+def set_wkdir(_):
+    context.working_dir = workingdir_selector.value
+    print("Working Directory set to: {}".format(context.working_dir))
+    context_path_txt.value = context.working_dir
+    cnmf_file_selector.value = context.working_dir
+    file_selector.value = context.working_dir
+workingdir_btn.on_click(set_wkdir)
+
+
 def view_results_(_):
     #Yr_reshaped.reshape(np.prod(dims), T)
     interface_edit = show_cnmf_results_interface()
