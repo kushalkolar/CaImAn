@@ -157,6 +157,7 @@ def load_files(fldr, print_values=False):
 		return [fldr]
 	else:
 		files = glob.glob(fldr + '*.tif') + glob.glob(fldr + '*.tiff') + glob.glob(fldr + '*.avi')
+		files = sorted(files)
 		if print_values:
 			print("Loaded files:")
 			for each_file in files:
