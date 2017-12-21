@@ -508,6 +508,8 @@ def show_cnmf_results_interface():
 	cor_img_file.close()
 	#full spatial matrix image
 	a_img_file = io.BytesIO()
+	if type(A) != np.ndarray: #probably sparse array, need to convert to dense array
+		A = A.toarray()
 	#a_image = np.mean(A.reshape(dims[1], dims[0], A.shape[1]), axis=2)
 	a_image = np.mean(A.reshape(dims[1], dims[0], A.shape[1]), axis=2).T
 	a_image = scale( a_image, axis=1, with_mean=False, with_std=True, copy=True ) #normalize pixel values (enhances contrast)
