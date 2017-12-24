@@ -1550,9 +1550,9 @@ def compute_W(Y, A, C, dims, radius, data_fits_in_memory=True):
         indices += list(index)
         B = Y[index] - A[index].dot(C) - b0[index, None] if X is None else X[index]
         data += list(np.linalg.inv(np.array(B.dot(B.T)) +
-                                   1e-9 * np.eye(len(index), dtype='float32')).
+                                   1e-9 * np.eye(len(index), dtype='float64')).
                      dot(B.dot(Y[p] - A[p].dot(C).ravel() - b0[p] if X is None else X[p])))
         # np.linalg.lstsq seems less robust but scipy version would be (robust but for the problem size slower) alternative
         # data += list(scipy.linalg.lstsq(B.T, Y[p] - A[p].dot(C) - b0[p], check_finite=False)[0])
         indptr.append(len(indices))
-    return spr.csr_matrix((data, indices, indptr), dtype='float32'), b0.astype(np.float32)
+    return spr.csr_matrix((data, indices, indptr), dtype='float64'), b0.astype(np.float64)

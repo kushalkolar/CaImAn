@@ -130,8 +130,8 @@ class Context: #used to save data related to analysis (not serializable)
 
 
 #setup cluster
-def start_procs():
-	c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=None, single_thread=False)
+def start_procs(n_processes=None):
+	c, dview, n_processes = cm.cluster.setup_cluster(backend='local', n_processes=n_processes, single_thread=False)
 	return c, dview, n_processes
 
 

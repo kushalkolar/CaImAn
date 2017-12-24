@@ -22,7 +22,7 @@ Nov 2017
 '''
 
 #create context
-context = Context(start_procs())
+context = Context(start_procs(10))
 
 #motion correction interface
 
