@@ -38,7 +38,7 @@ import h5py
 import pickle as cpk
 from scipy.io import loadmat
 from matplotlib import animation
-import pylab as pl
+#import pylab as pl
 from skimage.external.tifffile import imread
 from tqdm import tqdm
 from . import timeseries
@@ -764,16 +764,16 @@ class movie(ts.timeseries):
                 rho = si.local_correlations(np.array(self[mv * frames_per_chunk:(mv + 1) * frames_per_chunk]),
                                             eight_neighbours=eight_neighbours, swap_dim=swap_dim)
                 Cn = np.maximum(Cn, rho)
-                pl.imshow(Cn, cmap='gray')
-                pl.pause(.1)
+#                pl.imshow(Cn, cmap='gray')
+#                pl.pause(.1)
 
             print('number of chunks:' + str(n_chunks - 1) +
                   ' frames: ' + str([(n_chunks - 1) * frames_per_chunk, T]))
             rho = si.local_correlations(np.array(self[(n_chunks - 1) * frames_per_chunk:]), eight_neighbours=eight_neighbours,
                                         swap_dim=swap_dim)
             Cn = np.maximum(Cn, rho)
-            pl.imshow(Cn, cmap='gray')
-            pl.pause(.1)
+#            pl.imshow(Cn, cmap='gray')
+#            pl.pause(.1)
 
         return Cn
 
@@ -978,144 +978,144 @@ class movie(ts.timeseries):
         d = d1 * d2
         return np.reshape(self, (T, d), order=order)
 
-    def zproject(self, method='mean', cmap=pl.cm.gray, aspect='auto', **kwargs):
-        """
-        Compute and plot projection across time:
-
-        Parameters:
-        ------------
-        method: String
-            'mean','median','std'
-
-        **kwargs: dict
-            arguments to imagesc
-
-        Raise:
-        ------
-        Exception('Method not implemented')
-        """
-        # todo: todocument
-        if method == 'mean':
-            zp = np.mean(self, axis=0)
-        elif method == 'median':
-            zp = np.median(self, axis=0)
-        elif method == 'std':
-            zp = np.std(self, axis=0)
-        else:
-            raise Exception('Method not implemented')
-        pl.imshow(zp, cmap=cmap, aspect=aspect, **kwargs)
-        return zp
+#    def zproject(self, method='mean', cmap=pl.cm.gray, aspect='auto', **kwargs):
+#        """
+#        Compute and plot projection across time:
+#
+#        Parameters:
+#        ------------
+#        method: String
+#            'mean','median','std'
+#
+#        **kwargs: dict
+#            arguments to imagesc
+#
+#        Raise:
+#        ------
+#        Exception('Method not implemented')
+#        """
+#        # todo: todocument
+#        if method == 'mean':
+#            zp = np.mean(self, axis=0)
+#        elif method == 'median':
+#            zp = np.median(self, axis=0)
+#        elif method == 'std':
+#            zp = np.std(self, axis=0)
+#        else:
+#            raise Exception('Method not implemented')
+#        pl.imshow(zp, cmap=cmap, aspect=aspect, **kwargs)
+#        return zp
 
     def local_correlations_movie(self, window=10):
         T, _, _ = self.shape
         return movie(np.concatenate([self[j:j + window, :, :].local_correlations(
             eight_neighbours=True)[np.newaxis, :, :] for j in range(T - window)], axis=0), fr=self.fr)
 
-    def play(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
-             backend='opencv', do_loop=False, bord_px=None):
-        """
-        Play the movie using opencv
-
-        Parameters:
-        ----------
-        gain: adjust  movie brightness
-
-        frate : playing speed if different from original (inter frame interval in seconds)
-
-        backend: 'pylab' or 'opencv', the latter much faster
-
-        Raise:
-        -----
-         Exception('Unknown backend!')
-        """
-        # todo: todocument
-        if backend == 'pylab':
-            print('*** WARNING *** SPEED MIGHT BE LOW. USE opencv backend if available')
-
-        gain *= 1.
-        maxmov = np.nanmax(self)
-
-        if backend == 'pylab':
-            pl.ion()
-            fig = pl.figure(1)
-            ax = fig.add_subplot(111)
-            ax.set_title("Play Movie")
-            im = ax.imshow((offset + self[0]) * gain / maxmov, cmap=pl.cm.gray,
-                           vmin=0, vmax=1, interpolation='none')  # Blank starting image
-            fig.show()
-            im.axes.figure.canvas.draw()
-            pl.pause(1)
-
-        if backend == 'notebook':
-            # First set up the figure, the axis, and the plot element we want to animate
-            fig = pl.figure()
-            im = pl.imshow(self[0], interpolation='None', cmap=pl.cm.gray)
-            pl.axis('off')
-
-            def animate(i):
-                im.set_data(self[i])
-                return im,
-
-            # call the animator.  blit=True means only re-draw the parts that have changed.
-            anim = animation.FuncAnimation(fig, animate,
-                                           frames=self.shape[0], interval=1, blit=True)
-
-            # call our new function to display the animation
-            return visualization.display_animation(anim, fps=fr)
-
-        if fr is None:
-            fr = self.fr
-
-        looping = True
-        terminated = False
-
-        while looping:
-
-            for iddxx, frame in enumerate(self):
-                if bord_px is not None and np.sum(bord_px) > 0:
-                    frame = frame[bord_px:-bord_px, bord_px:-bord_px]
-
-                if backend == 'opencv':
-                    if magnification != 1:
-                        frame = cv2.resize(
-                            frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
-
-                    cv2.imshow('frame', (offset + frame) * gain / maxmov)
-                    if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('q'):
-                        looping = False
-                        terminated = True
-                        break
-
-                elif backend == 'pylab':
-
-                    im.set_data((offset + frame) * gain / maxmov)
-                    ax.set_title(str(iddxx))
-                    pl.axis('off')
-                    fig.canvas.draw()
-                    pl.pause(1. / fr * .5)
-                    ev = pl.waitforbuttonpress(1. / fr * .5)
-                    if ev is not None:
-                        pl.close()
-                        break
-
-                elif backend == 'notebook':
-                    print('Animated via MP4')
-                    break
-
-                else:
-                    raise Exception('Unknown backend!')
-
-            if terminated:
-                break
-
-            if do_loop:
-                looping = True
-
-        if backend == 'opencv':
-            cv2.waitKey(100)
-            cv2.destroyAllWindows()
-            for i in range(10):
-                cv2.waitKey(100)
+#    def play(self, gain=1, fr=None, magnification=1, offset=0, interpolation=cv2.INTER_LINEAR,
+#             backend='opencv', do_loop=False, bord_px=None):
+#        """
+#        Play the movie using opencv
+#
+#        Parameters:
+#        ----------
+#        gain: adjust  movie brightness
+#
+#        frate : playing speed if different from original (inter frame interval in seconds)
+#
+#        backend: 'pylab' or 'opencv', the latter much faster
+#
+#        Raise:
+#        -----
+#         Exception('Unknown backend!')
+#        """
+#        # todo: todocument
+#        if backend == 'pylab':
+#            print('*** WARNING *** SPEED MIGHT BE LOW. USE opencv backend if available')
+#
+#        gain *= 1.
+#        maxmov = np.nanmax(self)
+#
+#        if backend == 'pylab':
+#            pl.ion()
+#            fig = pl.figure(1)
+#            ax = fig.add_subplot(111)
+#            ax.set_title("Play Movie")
+#            im = ax.imshow((offset + self[0]) * gain / maxmov, cmap=pl.cm.gray,
+#                           vmin=0, vmax=1, interpolation='none')  # Blank starting image
+#            fig.show()
+#            im.axes.figure.canvas.draw()
+#            pl.pause(1)
+#
+#        if backend == 'notebook':
+#            # First set up the figure, the axis, and the plot element we want to animate
+#            fig = pl.figure()
+#            im = pl.imshow(self[0], interpolation='None', cmap=pl.cm.gray)
+#            pl.axis('off')
+#
+#            def animate(i):
+#                im.set_data(self[i])
+#                return im,
+#
+#            # call the animator.  blit=True means only re-draw the parts that have changed.
+#            anim = animation.FuncAnimation(fig, animate,
+#                                           frames=self.shape[0], interval=1, blit=True)
+#
+#            # call our new function to display the animation
+#            return visualization.display_animation(anim, fps=fr)
+#
+#        if fr is None:
+#            fr = self.fr
+#
+#        looping = True
+#        terminated = False
+#
+#        while looping:
+#
+#            for iddxx, frame in enumerate(self):
+#                if bord_px is not None and np.sum(bord_px) > 0:
+#                    frame = frame[bord_px:-bord_px, bord_px:-bord_px]
+#
+#                if backend == 'opencv':
+#                    if magnification != 1:
+#                        frame = cv2.resize(
+#                            frame, None, fx=magnification, fy=magnification, interpolation=interpolation)
+#
+#                    cv2.imshow('frame', (offset + frame) * gain / maxmov)
+#                    if cv2.waitKey(int(1. / fr * 1000)) & 0xFF == ord('q'):
+#                        looping = False
+#                        terminated = True
+#                        break
+#
+#                elif backend == 'pylab':
+#
+#                    im.set_data((offset + frame) * gain / maxmov)
+#                    ax.set_title(str(iddxx))
+#                    pl.axis('off')
+#                    fig.canvas.draw()
+#                    pl.pause(1. / fr * .5)
+#                    ev = pl.waitforbuttonpress(1. / fr * .5)
+#                    if ev is not None:
+#                        pl.close()
+#                        break
+#
+#                elif backend == 'notebook':
+#                    print('Animated via MP4')
+#                    break
+#
+#                else:
+#                    raise Exception('Unknown backend!')
+#
+#            if terminated:
+#                break
+#
+#            if do_loop:
+#                looping = True
+#
+#        if backend == 'opencv':
+#            cv2.waitKey(100)
+#            cv2.destroyAllWindows()
+#            for i in range(10):
+#                cv2.waitKey(100)
 
 
 
@@ -1339,8 +1339,8 @@ def load(file_name,fr=30,start_time=0,meta_data=None,subindices=None,shape=None,
                 input_arr = np.array(dataset.sequences[0])[
                     subindices, :, :, :, :].squeeze()
 
-        else:
-            raise Exception('Unknown file type')
+#        else:
+#            raise Exception('Unknown file type')
     else:
         print('File is:')
         print(file_name)

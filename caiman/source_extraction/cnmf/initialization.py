@@ -32,7 +32,7 @@ from caiman.source_extraction.cnmf.pre_processing import get_noise_fft
 from caiman.source_extraction.cnmf.spatial import circular_constraint
 import cv2
 import sys
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 
@@ -1264,37 +1264,37 @@ def init_neurons_corr_pnr(data, max_number=None, gSiz=15, gSig=None,
     continue_searching = True
     min_v_search = min_corr * min_pnr
 
-    if save_video:
-        FFMpegWriter = animation.writers['ffmpeg']
-        metadata = dict(title='Initialization procedure', artist='CaImAn',
-                        comment='CaImAn is cool!')
-        writer = FFMpegWriter(fps=2, metadata=metadata)
-        # visualize the initialization procedure.
-        fig = plt.figure(figsize=(12, 8), facecolor=(0.9, 0.9, 0.9))
-        # with writer.saving(fig, "initialization.mp4", 150):
-        writer.setup(fig, video_name, 150)
-
-        ax_cn = plt.subplot2grid((2, 3), (0, 0))
-        ax_cn.imshow(cn)
-        ax_cn.set_title('Correlation')
-        ax_cn.set_axis_off()
-
-        ax_pnr_cn = plt.subplot2grid((2, 3), (0, 1))
-        ax_pnr_cn.imshow(cn * pnr)
-        ax_pnr_cn.set_title('Correlation*PNR')
-        ax_pnr_cn.set_axis_off()
-
-        ax_cn_box = plt.subplot2grid((2, 3), (0, 2))
-        ax_cn_box.imshow(cn)
-        ax_cn_box.set_xlim([54, 63])
-        ax_cn_box.set_ylim([54, 63])
-        ax_cn_box.set_title('Correlation')
-        ax_cn_box.set_axis_off()
-
-        ax_traces = plt.subplot2grid((2, 3), (1, 0), colspan=3)
-        ax_traces.set_title('Activity at the seed pixel')
-
-        writer.grab_frame()
+#    if save_video:
+#        FFMpegWriter = animation.writers['ffmpeg']
+#        metadata = dict(title='Initialization procedure', artist='CaImAn',
+#                        comment='CaImAn is cool!')
+#        writer = FFMpegWriter(fps=2, metadata=metadata)
+#        # visualize the initialization procedure.
+#        fig = plt.figure(figsize=(12, 8), facecolor=(0.9, 0.9, 0.9))
+#        # with writer.saving(fig, "initialization.mp4", 150):
+#        writer.setup(fig, video_name, 150)
+#
+#        ax_cn = plt.subplot2grid((2, 3), (0, 0))
+#        ax_cn.imshow(cn)
+#        ax_cn.set_title('Correlation')
+#        ax_cn.set_axis_off()
+#
+#        ax_pnr_cn = plt.subplot2grid((2, 3), (0, 1))
+#        ax_pnr_cn.imshow(cn * pnr)
+#        ax_pnr_cn.set_title('Correlation*PNR')
+#        ax_pnr_cn.set_axis_off()
+#
+#        ax_cn_box = plt.subplot2grid((2, 3), (0, 2))
+#        ax_cn_box.imshow(cn)
+#        ax_cn_box.set_xlim([54, 63])
+#        ax_cn_box.set_ylim([54, 63])
+#        ax_cn_box.set_title('Correlation')
+#        ax_cn_box.set_axis_off()
+#
+#        ax_traces = plt.subplot2grid((2, 3), (1, 0), colspan=3)
+#        ax_traces.set_title('Activity at the seed pixel')
+#
+#        writer.grab_frame()
 
     while continue_searching:
         if seed_method.lower() == 'manual':
@@ -1490,10 +1490,10 @@ def init_neurons_corr_pnr(data, max_number=None, gSiz=15, gSig=None,
     C_raw = Cin_raw[:num_neurons]
     S = Sin[:num_neurons]
     center = center[:, :num_neurons]
-
-    if save_video:
-        plt.close()
-        writer.finish()
+#
+#    if save_video:
+#        plt.close()
+#        writer.finish()
 
     return A, C, C_raw, S, center
 

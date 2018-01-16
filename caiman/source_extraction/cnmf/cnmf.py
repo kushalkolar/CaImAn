@@ -42,7 +42,7 @@ from .online_cnmf import RingBuffer, HALS4activity, demix_and_deconvolve
 from .online_cnmf import init_shapes_and_sufficient_stats, update_shapes, update_num_components
 import scipy
 import psutil
-import pylab as pl
+#import pylab as pl
 from time import time
 
 try:
@@ -1105,39 +1105,39 @@ class CNMF(object):
         nB_inv_mat = scipy.sparse.spdiags(1. / nB, 0, nB.shape[0], nB.shape[0])
         self.b = self.b * nB_inv_mat
         self.f = nB_mat * self.f
-
-    def view_patches(self, Yr, dims, img=None):
-        """view spatial and temporal components interactively
-
-         Parameters:
-         -----------
-         Yr :    np.ndarray
-                 movie in format pixels (d) x frames (T)
-
-         dims :  tuple
-                 dimensions of the FOV
-
-         img :   np.ndarray
-                 background image for contour plotting. Default is the mean image of all spatial components (d1 x d2)
-
-        """
-        if 'csc_matrix' not in str(type(self.A)):
-            self.A = scipy.sparse.csc_matrix(self.A)
-        if 'array' not in str(type(self.b)):
-            self.b = self.b.toarray()
-
-        pl.ion()
-        nr, T = self.C.shape
-        #nb = self.f.shape[0]
-
-        if self.YrA is None:
-            self.compute_residuals(Yr)
-
-        if img is None:
-            img = np.reshape(np.array(self.A.mean(axis=1)), dims, order='F')
-
-        caiman.utils.visualization.view_patches_bar(Yr, self.A, self.C, self.b, self.f, dims[
-                                                    0], dims[1], YrA=self.YrA, img=img)
+#
+#    def view_patches(self, Yr, dims, img=None):
+#        """view spatial and temporal components interactively
+#
+#         Parameters:
+#         -----------
+#         Yr :    np.ndarray
+#                 movie in format pixels (d) x frames (T)
+#
+#         dims :  tuple
+#                 dimensions of the FOV
+#
+#         img :   np.ndarray
+#                 background image for contour plotting. Default is the mean image of all spatial components (d1 x d2)
+#
+#        """
+#        if 'csc_matrix' not in str(type(self.A)):
+#            self.A = scipy.sparse.csc_matrix(self.A)
+#        if 'array' not in str(type(self.b)):
+#            self.b = self.b.toarray()
+#
+#        pl.ion()
+#        nr, T = self.C.shape
+#        #nb = self.f.shape[0]
+#
+#        if self.YrA is None:
+#            self.compute_residuals(Yr)
+#
+#        if img is None:
+#            img = np.reshape(np.array(self.A.mean(axis=1)), dims, order='F')
+#
+#        caiman.utils.visualization.view_patches_bar(Yr, self.A, self.C, self.b, self.f, dims[
+#                                                    0], dims[1], YrA=self.YrA, img=img)
 
 
 def scale(y):

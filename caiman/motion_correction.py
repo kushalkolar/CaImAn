@@ -48,7 +48,7 @@ from builtins import str
 from builtins import range
 from past.utils import old_div
 import numpy as np
-import pylab as pl
+#import pylab as pl
 import cv2
 import h5py
 
@@ -286,9 +286,9 @@ class MotionCorrect(object):
                         max_deviation_rigid=self.max_deviation_rigid, splits=self.splits_els,
                         num_splits_to_process=num_splits_to_process, num_iter=num_iter, template=self.total_template_els,
                         shifts_opencv=self.shifts_opencv, save_movie=save_movie, nonneg_movie=self.nonneg_movie, gSig_filt=self.gSig_filt)
-                if show_template:
-                    pl.imshow(new_template_els)
-                    pl.pause(.5)
+#                if show_template:
+#                    pl.imshow(new_template_els)
+#                    pl.pause(.5)
                 if np.isnan(np.sum(new_template_els)):
                     raise Exception(
                         'Template contains NaNs, something went wrong. Reconsider the parameters')
@@ -668,11 +668,11 @@ def motion_correct_online(movie_iterable, add_to_movie, max_shift_w=25, max_shif
                     buffer_templates.append(np.mean(buffer_frames, 0))
                     template = np.median(buffer_templates, 0)
 
-                if show_template:
-                    pl.cla()
-                    pl.imshow(template, cmap='gray', vmin=250,
-                              vmax=350, interpolation='none')
-                    pl.pause(.001)
+#                if show_template:
+#                    pl.cla()
+#                    pl.imshow(template, cmap='gray', vmin=250,
+#                              vmax=350, interpolation='none')
+#                    pl.pause(.001)
 
                 print(('Relative change in template:' + str(
                     old_div(np.sum(np.abs(template - template_old)), np.sum(np.abs(template))))))
@@ -2265,21 +2265,21 @@ def compute_metrics_motion_correction(fname, final_size_x, final_size_y, swap_di
         flow = cv2.calcOpticalFlowFarneback(
             tmpl, fr, None, pyr_scale, levels, winsize, iterations, poly_n, poly_sigma, flags)
 
-        if play_flow:
-            pl.subplot(1, 3, 1)
-            pl.cla()
-            pl.imshow(fr, vmin=0, vmax=300, cmap='gray')
-            pl.title('movie')
-            pl.subplot(1, 3, 3)
-            pl.cla()
-            pl.imshow(flow[:, :, 1], vmin=vmin, vmax=vmax)
-            pl.title('y_flow')
-
-            pl.subplot(1, 3, 2)
-            pl.cla()
-            pl.imshow(flow[:, :, 0], vmin=vmin, vmax=vmax)
-            pl.title('x_flow')
-            pl.pause(.05)
+#        if play_flow:
+#            pl.subplot(1, 3, 1)
+#            pl.cla()
+#            pl.imshow(fr, vmin=0, vmax=300, cmap='gray')
+#            pl.title('movie')
+#            pl.subplot(1, 3, 3)
+#            pl.cla()
+#            pl.imshow(flow[:, :, 1], vmin=vmin, vmax=vmax)
+#            pl.title('y_flow')
+#
+#            pl.subplot(1, 3, 2)
+#            pl.cla()
+#            pl.imshow(flow[:, :, 0], vmin=vmin, vmax=vmax)
+#            pl.title('x_flow')
+#            pl.pause(.05)
 
         n = np.linalg.norm(flow)
         flows.append(flow)
@@ -2558,7 +2558,7 @@ def tile_and_correct_wrapper(params):
         mc = np.zeros(imgs.shape, dtype=np.float32)
         shift_info = []
     for count, img in enumerate(imgs):
-        if count % 10 == 0:
+        if count % 250 == 0:
             print(count)
         mc[count], total_shift, start_step, xy_grid = tile_and_correct(img, template, strides, overlaps, max_shifts,
                                                                        add_to_movie=add_to_movie, newoverlaps=newoverlaps,
@@ -2611,7 +2611,9 @@ def motion_correction_piecewise(fname, splits, strides, overlaps, add_to_movie=0
         T = shape[2]
 
     elif extension == '.npy':
-        raise Exception('Numpy not supported at the moment')
+        fl = np.load(fname)
+        T, d2, d1 = np.shape(fl)
+        #raise Exception('Numpy not supported at the moment')
 
     elif extension == '.hdf5':
         with h5py.File(fname) as fl:

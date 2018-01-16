@@ -13,8 +13,8 @@ from builtins import range
 from past.utils import old_div
 import cv2
 import numpy as np
-import pylab as pl
-pl.ion()
+#import pylab as pl
+#pl.ion()
 from . import timeseries as ts
 
 #%%
@@ -93,57 +93,57 @@ class trace(ts.timeseries):
     def resample(self, fx=1, fy=1, fz=1, interpolation=cv2.INTER_AREA):
         raise Exception('Not Implemented. Look at movie resize')
 
-    def plot(self, stacked=True, subtract_minimum=False, cmap=pl.cm.jet, **kwargs):
-        """Plot the data
-
-        author: ben deverett
-
-        Parameters:
-        ----------
-        stacked : bool
-            for multiple columns of data, stack instead of overlaying
-
-        subtract_minimum : bool
-            subtract minimum from each individual trace
-
-        cmap : matplotlib.LinearSegmentedColormap
-            color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
-
-        kwargs : dict
-            any arguments accepted by matplotlib.plot
-
-        Returns:
-        -------
-        The matplotlib axes object corresponding to the data plot
-        """
-        d = self.copy()
-        n = 1  # number of traces
-        if len(d.shape) > 1:
-            n = d.shape[1]
-
-        ax = pl.gca()
-
-        colors = cmap(np.linspace(0, 1, n))
-        ax.set_color_cycle(colors)
-
-        if subtract_minimum:
-            d -= d.min(axis=0)
-        if stacked and n > 1:
-            d += np.append(0, np.cumsum(d.max(axis=0))[:-1])
-        ax.plot(self.time, d, **kwargs)
-
-        # display trace labels along right
-        ax2 = ax.twinx()
-        ax2.set_ylim(ax.get_ylim())
-        ax2.set_yticks(np.atleast_1d(d.mean(axis=0)))
-        ax2.set_yticklabels([str(i) for i in range(n)], weight='bold')
-        [l.set_color(c) for l, c in zip(ax2.get_yticklabels(), colors)]
-
-        pl.gcf().canvas.draw()
-        return ax
-
-    def extract_epochs(self, trigs=None, tb=1, ta=1):
-        raise Exception('Not Implemented. Look at movie resize')
+#    def plot(self, stacked=True, subtract_minimum=False, cmap=pl.cm.jet, **kwargs):
+#        """Plot the data
+#
+#        author: ben deverett
+#
+#        Parameters:
+#        ----------
+#        stacked : bool
+#            for multiple columns of data, stack instead of overlaying
+#
+#        subtract_minimum : bool
+#            subtract minimum from each individual trace
+#
+#        cmap : matplotlib.LinearSegmentedColormap
+#            color map for display. Options are found in pl.colormaps(), and are accessed as pl.cm.my_favourite_map
+#
+#        kwargs : dict
+#            any arguments accepted by matplotlib.plot
+#
+#        Returns:
+#        -------
+#        The matplotlib axes object corresponding to the data plot
+#        """
+#        d = self.copy()
+#        n = 1  # number of traces
+#        if len(d.shape) > 1:
+#            n = d.shape[1]
+#
+#        ax = pl.gca()
+#
+#        colors = cmap(np.linspace(0, 1, n))
+#        ax.set_color_cycle(colors)
+#
+#        if subtract_minimum:
+#            d -= d.min(axis=0)
+#        if stacked and n > 1:
+#            d += np.append(0, np.cumsum(d.max(axis=0))[:-1])
+#        ax.plot(self.time, d, **kwargs)
+#
+#        # display trace labels along right
+#        ax2 = ax.twinx()
+#        ax2.set_ylim(ax.get_ylim())
+#        ax2.set_yticks(np.atleast_1d(d.mean(axis=0)))
+#        ax2.set_yticklabels([str(i) for i in range(n)], weight='bold')
+#        [l.set_color(c) for l, c in zip(ax2.get_yticklabels(), colors)]
+#
+##        pl.gcf().canvas.draw()
+#        return ax
+#
+#    def extract_epochs(self, trigs=None, tb=1, ta=1):
+#        raise Exception('Not Implemented. Look at movie resize')
 
 if __name__ == "__main__":
     tracedata = trace(3 + np.random.random((2000, 4)), fr=30, start_time=0)

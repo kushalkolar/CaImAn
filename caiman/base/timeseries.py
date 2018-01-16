@@ -25,12 +25,12 @@ import warnings
 import numpy as np
 import cv2
 import h5py
-import pylab as plt
+#import pylab as plt
 import pickle as cpk
-try:
-    plt.ion()
-except:
-    pass
+#try:
+#    plt.ion()
+#except:
+#    pass
 
 from scipy.io import savemat
 

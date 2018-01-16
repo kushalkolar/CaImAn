@@ -28,6 +28,9 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+#KDE Dolphin files
+.directory
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/
