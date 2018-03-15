@@ -56,7 +56,7 @@ from .traces import trace
 
 from ..mmapping import load_memmap
 # from ..utils import visualization
-from .. import summary_images as si
+# from .. import summary_images as si
 from ..motion_correction import apply_shift_online, motion_correct_online
 
 
