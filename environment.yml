@@ -22,3 +22,4 @@ dependencies:
 - pip:
   - tifffile
   - peakutils
+  - pyqtgraph==0.10.0
