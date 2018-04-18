@@ -28,7 +28,7 @@ setup(
     url='https://github.com/simonsfoundation/CaImAn',
     license='GPL-2',
     description='Advanced algorithms for ROI detection and deconvolution of Calcium Imaging datasets.',
-    long_description=readme,
+    long_description='',
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         # How mature is this project? Common values are
@@ -50,8 +50,7 @@ setup(
     ],
     keywords='fluorescence calcium ca imaging deconvolution ROI identification',
     packages=find_packages(exclude=['use_cases', 'use_cases.*']),
-    data_files=[('', ['LICENSE.txt']),
-                ('', ['README.md'])],
+
     install_requires=[''],
     ext_modules=cythonize(ext_modules)
 
