@@ -10,8 +10,8 @@ from setuptools.extension import Extension
 
 here = path.abspath(path.dirname(__file__))
 
-with open('README.md', 'r') as rmf:
-    readme = rmf.read()
+#with open('README.md', 'r') as rmf:
+#    readme = rmf.read()
 
 # compile with:     python setup.py build_ext -i
 # clean up with:    python setup.py clean --all
